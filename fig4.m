@@ -1,0 +1,43 @@
+clear;clc;
+ka1 = 0.5; n1 = 4; ka2 = 2.5; n2 = 2; L = 1; kd = 1.5; th = 0;
+ep0 = 1/36/pi * 1e-9; mi0 = 4*pi*1e-7; 
+ni0 = sqrt(ep0/mi0); 
+ni1 = n1*ni0; ni2 = n2*ni0;
+
+t_first = -ni2*dbesH(12,L + 1, 1,[ka1 ka2],[n1 n2]) + ni1*dbesJ(12, 1, 1,[ka1 ka2],[n1 n2])/besJ(12, 1, 1,[ka1 ka2],[n1 n2])*besH(12,L + 1, 1,[ka1 ka2],[n1 n2]);
+t_second = ni2*dbesJ(12,L + 1, 1,[ka1 ka2],[n1 n2]) - ni1*dbesJ(12, 1, 1,[ka1 ka2],[n1 n2])/besJ(12, 1, 1,[ka1 ka2],[n1 n2])*besJ(12,L + 1, 1,[ka1 ka2],[n1 n2]);
+
+T11 = t_first\t_second;
+
+
+[n, m] = meshgrid(-12:12, -12:12);
+b01 = besselj(n - m, kd) .* exp(1j * (n-m)*th);
+b10 = (-1).^(n-m) .* besselj(n - m, kd) .* exp(1j * (n-m)*th);
+
+t1 = b01 * T11 * b10;
+
+
+f = besJ(12,L + 1, L + 1,[ka1 ka2],[n1 n2]) + besH(12,L + 1, L + 1,[ka1 ka2],[n1 n2]) * t1 ;
+df = dbesJ(12,L + 1, L + 1,[ka1 ka2],[n1 n2]) + dbesH(12,L + 1, L + 1,[ka1 ka2],[n1 n2]) * t1;
+
+TLfirst = ni0*dbesH(12,0,L + 1,[ka1 ka2],[n1 n2]) - ni1*df/f * besH(12,0, L + 1,[ka1 ka2],[n1 n2]);
+TLsecond = ni0*dbesJ(12,0, L + 1,[ka1 ka2],[n1 n2]) - ni1*df/f * besJ(12,0, L + 1,[ka1 ka2],[n1 n2]);
+
+TL1 = -(TLfirst\TLsecond);
+
+fin = linspace(0, 2*pi);
+fi0 = fin + pi;
+
+s = 0;
+for n = -12:12
+   for np = -12:12
+        s = s + (-1j)^n * (1j)^np * exp(1j*(fi0*n - fin*np)) * TL1(n + 13, np + 13); 
+   end
+end
+
+sig = 2*abs((1-1j)*s).^2;
+
+plot(fin, sig)
+xlim([0 2*pi]); ylim([0 120])
+xticks(0:pi/2:2*pi);
+xticklabels({'0', '90', '180', '270', '360'});
